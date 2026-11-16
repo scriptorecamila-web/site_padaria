@@ -1,0 +1,8 @@
+Olá,
+
+Recebemos uma solicitação para redefinir a senha da sua conta na Padaria Doce & Ponto.
+Acesse o link abaixo para escolher uma nova senha:
+
+{{ protocol }}://{{ domain }}{% url 'confeitaria:redefinir_senha' uidb64=uid token=token %}
+
+Se você não solicitou a alteração, ignore esta mensagem. Sua senha continuará a mesma.

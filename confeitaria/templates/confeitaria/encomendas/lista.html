@@ -1,0 +1,48 @@
+{% extends "confeitaria/base.html" %}
+{% load pagination_tags %}
+{% block titulo %}Minhas Encomendas{% endblock %}
+{% block conteudo %}
+    <h1>Minhas Encomendas</h1>
+    <p><a href="{% url 'confeitaria:encomenda_criar' %}" class="botao">+ Nova encomenda</a></p>
+
+    <form method="get" class="filtros">
+        {{ filter.form.as_p }}
+        <button type="submit" class="botao">Filtrar</button>
+        <a class="link-simples" href="{% url 'confeitaria:encomenda_lista' %}">Limpar filtros</a>
+    </form>
+
+    <table class="tabela-padaria js-data-table">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Data de retirada</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for encomenda in encomendas %}
+            <tr>
+                <td><a class="link-simples" href="{% url 'confeitaria:encomenda_detalhe' encomenda.pk %}">{{ encomenda.produto.nome }}</a></td>
+                <td>{{ encomenda.data_retirada|date:"d/m/Y" }}</td>
+                <td><span class="selo-status">{{ encomenda.get_status_display }}</span></td>
+                <td>
+                    <a class="link-simples" href="{% url 'confeitaria:encomenda_editar' encomenda.pk %}">Editar</a>
+                    &middot;
+                    <a class="link-simples" href="{% url 'confeitaria:encomenda_excluir' encomenda.pk %}">Excluir</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Você ainda não fez nenhuma encomenda.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="paginacao">
+        {% if page_obj.has_previous %}<a class="link-simples" href="?{% query_transform page=page_obj.previous_page_number %}">« Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="link-simples" href="?{% query_transform page=page_obj.next_page_number %}">Próxima »</a>{% endif %}
+    </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "confeitaria/base.html" %}
+{% block titulo %}Recuperar senha{% endblock %}
+{% block conteudo %}
+    <div class="cartao">
+        <h1>Recuperar senha</h1>
+        <p>Informe o e-mail cadastrado para receber um link seguro de redefinição.</p>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="botao">Enviar link</button>
+        </form>
+        <p><a class="link-simples" href="{% url 'confeitaria:entrar' %}">Voltar para entrar</a></p>
+    </div>
+{% endblock %}

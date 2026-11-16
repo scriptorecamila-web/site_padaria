@@ -1,0 +1,9 @@
+{% extends "confeitaria/base.html" %}
+{% block titulo %}Senha alterada{% endblock %}
+{% block conteudo %}
+    <div class="cartao">
+        <h1>Senha alterada</h1>
+        <p>Sua senha foi redefinida com sucesso.</p>
+        <a class="botao" href="{% url 'confeitaria:entrar' %}">Entrar</a>
+    </div>
+{% endblock %}
