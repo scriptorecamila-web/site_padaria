@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.mail import send_mail
+from django.db import transaction
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -14,10 +16,23 @@ from django.views.generic import (
     UpdateView,
 )
 
-from .filters import EncomendaFilter, PedidoFilter, ProdutoFilter
-from .forms import FormularioEmail, FormularioEncomenda, FormularioPedido, FormularioProduto
-from .mixins import FiltroClienteMixin, ListaComFiltroMixin, MensagemExclusaoMixin
-from .models import Encomenda, Pedido, Produto
+from .estoque import (
+    EstoqueInsuficiente,
+    estornar_estoque_do_pedido,
+    registrar_movimento_manual,
+    salvar_novo_pedido,
+    salvar_pedido_editado,
+)
+from .filters import EncomendaFilter, MovimentoEstoqueFilter, PedidoFilter, ProdutoFilter
+from .forms import (
+    FormularioEmail,
+    FormularioEncomenda,
+    FormularioMovimentoEstoque,
+    FormularioPedido,
+    FormularioProduto,
+)
+from .mixins import FiltroClienteMixin, GrupoNecessarioMixin, ListaComFiltroMixin, MensagemExclusaoMixin
+from .models import Encomenda, MovimentoEstoque, Pedido, Produto
 
 
 # ---------------------------------------------------------------------------
@@ -28,36 +43,36 @@ from .models import Encomenda, Pedido, Produto
 class ListaProdutos(LoginRequiredMixin, ListaComFiltroMixin, ListView):
     model = Produto
     filterset_class = ProdutoFilter
-    template_name = "confeitaria/produtos/lista.html"
+    template_name = "confeitaria/produtos/produto_list.html"
     context_object_name = "produtos"
     paginate_by = 20
 
 
 class DetalheProduto(LoginRequiredMixin, DetailView):
     model = Produto
-    template_name = "confeitaria/produtos/detalhe.html"
+    template_name = "confeitaria/produtos/produto_detail.html"
     context_object_name = "produto"
 
 
-class CriarProduto(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class CriarProduto(LoginRequiredMixin, GrupoNecessarioMixin, SuccessMessageMixin, CreateView):
     model = Produto
     form_class = FormularioProduto
-    template_name = "confeitaria/produtos/formulario.html"
+    template_name = "confeitaria/produtos/produto_form.html"
     success_url = reverse_lazy("confeitaria:produto_lista")
     success_message = "Produto cadastrado com sucesso."
 
 
-class EditarProduto(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+class EditarProduto(LoginRequiredMixin, GrupoNecessarioMixin, SuccessMessageMixin, UpdateView):
     model = Produto
     form_class = FormularioProduto
-    template_name = "confeitaria/produtos/formulario.html"
+    template_name = "confeitaria/produtos/produto_form.html"
     success_url = reverse_lazy("confeitaria:produto_lista")
     success_message = "Produto atualizado com sucesso."
 
 
-class ExcluirProduto(LoginRequiredMixin, MensagemExclusaoMixin, DeleteView):
+class ExcluirProduto(LoginRequiredMixin, GrupoNecessarioMixin, MensagemExclusaoMixin, DeleteView):
     model = Produto
-    template_name = "confeitaria/produtos/excluir.html"
+    template_name = "confeitaria/produtos/produto_excluir_form.html"
     success_url = reverse_lazy("confeitaria:produto_lista")
     success_message = "Produto excluído com sucesso."
 
@@ -76,42 +91,62 @@ class ExcluirProduto(LoginRequiredMixin, MensagemExclusaoMixin, DeleteView):
 class ListaPedidos(LoginRequiredMixin, FiltroClienteMixin, ListaComFiltroMixin, ListView):
     model = Pedido
     filterset_class = PedidoFilter
-    template_name = "confeitaria/pedidos/lista.html"
+    template_name = "confeitaria/pedidos/pedido_list.html"
     context_object_name = "pedidos"
     paginate_by = 20
 
 
 class DetalhePedido(LoginRequiredMixin, FiltroClienteMixin, DetailView):
     model = Pedido
-    template_name = "confeitaria/pedidos/detalhe.html"
+    template_name = "confeitaria/pedidos/pedido_detail.html"
     context_object_name = "pedido"
 
 
-class CriarPedido(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class CriarPedido(LoginRequiredMixin, GrupoNecessarioMixin, SuccessMessageMixin, CreateView):
     model = Pedido
     form_class = FormularioPedido
-    template_name = "confeitaria/pedidos/formulario.html"
+    template_name = "confeitaria/pedidos/pedido_form.html"
     success_url = reverse_lazy("confeitaria:pedido_lista")
     success_message = "Pedido cadastrado com sucesso."
+    grupos_permitidos = ("Clientes", "Equipe")
 
     def form_valid(self, form):
-        form.instance.cliente = self.request.user
-        return super().form_valid(form)
+        try:
+            self.object = salvar_novo_pedido(form, self.request.user)
+        except EstoqueInsuficiente as erro:
+            form.add_error("quantidade", erro.mensagem)
+            return self.form_invalid(form)
+        messages.success(self.request, self.get_success_message(form.cleaned_data))
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class EditarPedido(LoginRequiredMixin, FiltroClienteMixin, SuccessMessageMixin, UpdateView):
     model = Pedido
     form_class = FormularioPedido
-    template_name = "confeitaria/pedidos/formulario.html"
+    template_name = "confeitaria/pedidos/pedido_form.html"
     success_url = reverse_lazy("confeitaria:pedido_lista")
     success_message = "Pedido atualizado com sucesso."
+
+    def form_valid(self, form):
+        try:
+            self.object = salvar_pedido_editado(form, self.request.user)
+        except EstoqueInsuficiente as erro:
+            form.add_error("quantidade", erro.mensagem)
+            return self.form_invalid(form)
+        messages.success(self.request, self.get_success_message(form.cleaned_data))
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class ExcluirPedido(LoginRequiredMixin, FiltroClienteMixin, MensagemExclusaoMixin, DeleteView):
     model = Pedido
-    template_name = "confeitaria/pedidos/excluir.html"
+    template_name = "confeitaria/pedidos/pedido_excluir_form.html"
     success_url = reverse_lazy("confeitaria:pedido_lista")
     success_message = "Pedido excluído com sucesso."
+
+    def form_valid(self, form):
+        with transaction.atomic():
+            estornar_estoque_do_pedido(self.object, self.request.user)
+            return super().form_valid(form)
 
 
 # ---------------------------------------------------------------------------
@@ -120,23 +155,24 @@ class ExcluirPedido(LoginRequiredMixin, FiltroClienteMixin, MensagemExclusaoMixi
 class ListaEncomendas(LoginRequiredMixin, FiltroClienteMixin, ListaComFiltroMixin, ListView):
     model = Encomenda
     filterset_class = EncomendaFilter
-    template_name = "confeitaria/encomendas/lista.html"
+    template_name = "confeitaria/encomendas/encomenda_list.html"
     context_object_name = "encomendas"
     paginate_by = 20
 
 
 class DetalheEncomenda(LoginRequiredMixin, FiltroClienteMixin, DetailView):
     model = Encomenda
-    template_name = "confeitaria/encomendas/detalhe.html"
+    template_name = "confeitaria/encomendas/encomenda_detail.html"
     context_object_name = "encomenda"
 
 
-class CriarEncomenda(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+class CriarEncomenda(LoginRequiredMixin, GrupoNecessarioMixin, SuccessMessageMixin, CreateView):
     model = Encomenda
     form_class = FormularioEncomenda
-    template_name = "confeitaria/encomendas/formulario.html"
+    template_name = "confeitaria/encomendas/encomenda_form.html"
     success_url = reverse_lazy("confeitaria:encomenda_lista")
     success_message = "Encomenda cadastrada com sucesso."
+    grupos_permitidos = ("Clientes", "Equipe")
 
     def form_valid(self, form):
         form.instance.cliente = self.request.user
@@ -146,20 +182,51 @@ class CriarEncomenda(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 class EditarEncomenda(LoginRequiredMixin, FiltroClienteMixin, SuccessMessageMixin, UpdateView):
     model = Encomenda
     form_class = FormularioEncomenda
-    template_name = "confeitaria/encomendas/formulario.html"
+    template_name = "confeitaria/encomendas/encomenda_form.html"
     success_url = reverse_lazy("confeitaria:encomenda_lista")
     success_message = "Encomenda atualizada com sucesso."
 
 
 class ExcluirEncomenda(LoginRequiredMixin, FiltroClienteMixin, MensagemExclusaoMixin, DeleteView):
     model = Encomenda
-    template_name = "confeitaria/encomendas/excluir.html"
+    template_name = "confeitaria/encomendas/encomenda_excluir_form.html"
     success_url = reverse_lazy("confeitaria:encomenda_lista")
     success_message = "Encomenda excluída com sucesso."
 
 
+class ListaMovimentosEstoque(LoginRequiredMixin, GrupoNecessarioMixin, ListaComFiltroMixin, ListView):
+    model = MovimentoEstoque
+    filterset_class = MovimentoEstoqueFilter
+    template_name = "confeitaria/estoque/estoque_list.html"
+    context_object_name = "movimentos"
+    paginate_by = 20
+
+
+class CriarMovimentoEstoque(LoginRequiredMixin, GrupoNecessarioMixin, SuccessMessageMixin, CreateView):
+    model = MovimentoEstoque
+    form_class = FormularioMovimentoEstoque
+    template_name = "confeitaria/estoque/estoque_form.html"
+    success_url = reverse_lazy("confeitaria:estoque_lista")
+    success_message = "Movimento de estoque registrado com sucesso."
+
+    def form_valid(self, form):
+        try:
+            self.object = registrar_movimento_manual(
+                produto=form.cleaned_data["produto"],
+                tipo=form.cleaned_data["tipo"],
+                quantidade=form.cleaned_data["quantidade"],
+                motivo=form.cleaned_data["motivo"],
+                usuario=self.request.user,
+            )
+        except EstoqueInsuficiente as erro:
+            form.add_error("quantidade", erro.mensagem)
+            return self.form_invalid(form)
+        messages.success(self.request, self.get_success_message(form.cleaned_data))
+        return HttpResponseRedirect(self.get_success_url())
+
+
 class RecuperarUsuario(FormView):
-    template_name = "conta/recuperar_usuario.html"
+    template_name = "conta/recuperar_usuario_form.html"
     form_class = FormularioEmail
     success_url = reverse_lazy("confeitaria:recuperar_usuario")
 

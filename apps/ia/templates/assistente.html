@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Assistente{% endblock %}
+{% block conteudo %}
+    <span class="eyebrow">Balcão virtual</span>
+    <h1>Assistente</h1>
+    <p>Pergunte sobre o cardápio, os seus pedidos e as suas encomendas. A conversa fica só na sua conta.</p>
+
+    <div class="layout-assistente">
+        <aside class="cartao">
+            <h2>Conversas</h2>
+            <p><a class="link-simples" href="{% url 'ia:assistente' %}">Nova conversa</a></p>
+            <p><a class="link-simples" href="{% url 'ia:conversa_lista' %}">Ver todas</a></p>
+            <ul class="lista-conversas">
+                {% for conversa in conversas %}
+                    <li>
+                        <a class="link-simples" href="{% url 'ia:assistente' %}?conversa={{ conversa.pk }}">{{ conversa.titulo }}</a>
+                    </li>
+                {% empty %}
+                    <li>Nenhuma conversa ainda.</li>
+                {% endfor %}
+            </ul>
+        </aside>
+
+        <section>
+            <div id="chat-assistente" class="chat-assistente" aria-live="polite">
+                {% for mensagem in mensagens_conversa %}
+                    <article class="bolha {{ mensagem.papel|lower }}">
+                        <strong>{{ mensagem.get_papel_display }}</strong>
+                        <p>{{ mensagem.conteudo|linebreaksbr }}</p>
+                    </article>
+                {% empty %}
+                    <article class="bolha assistente">
+                        <strong>Assistente</strong>
+                        <p>Olá! Posso consultar o cardápio e os registros da sua conta.</p>
+                    </article>
+                {% endfor %}
+            </div>
+
+            <form method="post" class="form-assistente">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="botao">Perguntar</button>
+            </form>
+
+            <div class="sugestoes">
+                <button type="button" class="botao secundario js-sugestao" data-texto="Quanto custa o pão francês?">Preço de um item</button>
+                <button type="button" class="botao secundario js-sugestao" data-texto="Quais produtos estão disponíveis?">Cardápio</button>
+                <button type="button" class="botao secundario js-sugestao" data-texto="Como estão meus pedidos?">Meus pedidos</button>
+            </div>
+        </section>
+    </div>
+{% endblock %}

@@ -2,13 +2,14 @@ from datetime import date, timedelta
 
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core import mail
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from .admin import PedidoAdmin
 from .forms import FormularioProduto
-from .models import Encomenda, Pedido, Produto
+from .models import Encomenda, MovimentoEstoque, Pedido, Produto
 
 
 class FuncionalidadesProjetoTests(TestCase):
@@ -127,6 +128,8 @@ class FuncionalidadesProjetoTests(TestCase):
         self.assertEqual(str(formulario.cleaned_data["preco"]), "12.50")
 
     def test_cadastro_de_produto_exibe_mensagem_de_sucesso(self):
+        equipe, _ = Group.objects.get_or_create(name="Equipe")
+        self.cliente.groups.add(equipe)
         self.client.force_login(self.cliente)
 
         resposta = self.client.post(
@@ -176,3 +179,86 @@ class FuncionalidadesProjetoTests(TestCase):
         )
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("senha/redefinir/", mail.outbox[0].body)
+
+    def test_pedido_baixa_estoque_na_mesma_operacao(self):
+        self.client.force_login(self.cliente)
+
+        resposta = self.client.post(
+            reverse("confeitaria:pedido_criar"),
+            {"produto": self.produto.pk, "quantidade": 2, "observacoes": ""},
+            follow=True,
+        )
+
+        self.produto.refresh_from_db()
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Pedido cadastrado com sucesso.")
+        self.assertEqual(self.produto.quantidade_estoque, 3)
+        self.assertEqual(MovimentoEstoque.objects.filter(tipo=MovimentoEstoque.SAIDA).count(), 1)
+
+    def test_pedido_sem_estoque_nao_e_gravado(self):
+        self.client.force_login(self.cliente)
+
+        resposta = self.client.post(
+            reverse("confeitaria:pedido_criar"),
+            {"produto": self.produto.pk, "quantidade": 9, "observacoes": ""},
+        )
+
+        self.produto.refresh_from_db()
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(Pedido.objects.count(), 0)
+        self.assertEqual(self.produto.quantidade_estoque, 5)
+        self.assertContains(resposta, "Estoque insuficiente")
+
+    def test_cancelar_pedido_estorna_estoque(self):
+        self.client.force_login(self.cliente)
+        self.client.post(
+            reverse("confeitaria:pedido_criar"),
+            {"produto": self.produto.pk, "quantidade": 2, "observacoes": ""},
+        )
+        pedido = Pedido.objects.get()
+
+        resposta = self.client.post(
+            reverse("confeitaria:pedido_editar", args=[pedido.pk]),
+            {
+                "produto": self.produto.pk,
+                "quantidade": 2,
+                "status": "CANCELADO",
+                "observacoes": "",
+            },
+        )
+
+        self.produto.refresh_from_db()
+        pedido.refresh_from_db()
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(pedido.status, "CANCELADO")
+        self.assertEqual(self.produto.quantidade_estoque, 5)
+
+    def test_cliente_nao_cadastra_produto_nem_ve_estoque(self):
+        self.client.force_login(self.cliente)
+
+        resposta_produto = self.client.get(reverse("confeitaria:produto_criar"))
+        resposta_estoque = self.client.get(reverse("confeitaria:estoque_lista"))
+
+        self.assertEqual(resposta_produto.status_code, 403)
+        self.assertEqual(resposta_estoque.status_code, 403)
+
+    def test_equipe_registra_entrada_de_estoque(self):
+        equipe, _ = Group.objects.get_or_create(name="Equipe")
+        self.cliente.groups.add(equipe)
+        self.client.force_login(self.cliente)
+
+        resposta = self.client.post(
+            reverse("confeitaria:estoque_criar"),
+            {
+                "produto": self.produto.pk,
+                "tipo": MovimentoEstoque.ENTRADA,
+                "quantidade": 4,
+                "motivo": "Fornada da manhã",
+            },
+            follow=True,
+        )
+
+        self.produto.refresh_from_db()
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Movimento de estoque registrado com sucesso.")
+        self.assertEqual(self.produto.quantidade_estoque, 9)

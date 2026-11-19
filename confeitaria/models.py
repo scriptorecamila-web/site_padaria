@@ -96,3 +96,43 @@ class Encomenda(models.Model):
 
     def get_absolute_url(self):
         return reverse("confeitaria:encomenda_detalhe", kwargs={"pk": self.pk})
+
+
+class MovimentoEstoque(models.Model):
+    """Entrada ou saída de estoque. A saída do pedido é gerada na mesma transação."""
+
+    ENTRADA = "ENTRADA"
+    SAIDA = "SAIDA"
+    TIPO_CHOICES = [
+        (ENTRADA, "Entrada"),
+        (SAIDA, "Saída"),
+    ]
+
+    produto = models.ForeignKey(Produto, on_delete=models.PROTECT, related_name="movimentos")
+    tipo = models.CharField(max_length=8, choices=TIPO_CHOICES)
+    quantidade = models.PositiveIntegerField()
+    motivo = models.CharField(max_length=200)
+    pedido = models.ForeignKey(
+        Pedido,
+        on_delete=models.SET_NULL,
+        related_name="movimentos_estoque",
+        null=True,
+        blank=True,
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="movimentos_estoque",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Movimento de estoque"
+        verbose_name_plural = "Movimentos de estoque"
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} de {self.quantidade} × {self.produto}"
+
+    def get_absolute_url(self):
+        return reverse("confeitaria:estoque_lista")

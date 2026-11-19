@@ -1,6 +1,6 @@
 import django_filters
 
-from .models import Encomenda, Pedido, Produto
+from .models import Encomenda, MovimentoEstoque, Pedido, Produto
 
 
 class ProdutoFilter(django_filters.FilterSet):
@@ -37,3 +37,15 @@ class EncomendaFilter(django_filters.FilterSet):
     class Meta:
         model = Encomenda
         fields = ["produto", "status"]
+
+
+class MovimentoEstoqueFilter(django_filters.FilterSet):
+    produto = django_filters.CharFilter(
+        field_name="produto__nome",
+        lookup_expr="icontains",
+        label="Produto",
+    )
+
+    class Meta:
+        model = MovimentoEstoque
+        fields = ["produto", "tipo"]

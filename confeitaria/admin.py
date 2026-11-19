@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Encomenda, Pedido, Produto
+from .models import Encomenda, MovimentoEstoque, Pedido, Produto
 
 
 class ClienteProprietarioAdminMixin:
@@ -31,3 +31,10 @@ class PedidoAdmin(ClienteProprietarioAdminMixin, admin.ModelAdmin):
 class EncomendaAdmin(ClienteProprietarioAdminMixin, admin.ModelAdmin):
     list_display = ("produto", "cliente", "data_retirada", "status")
     list_filter = ("status",)
+
+
+@admin.register(MovimentoEstoque)
+class MovimentoEstoqueAdmin(admin.ModelAdmin):
+    list_display = ("produto", "tipo", "quantidade", "usuario", "pedido", "criado_em")
+    list_filter = ("tipo",)
+    search_fields = ("produto__nome", "motivo")

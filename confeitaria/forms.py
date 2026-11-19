@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django import forms
 
-from .models import Encomenda, Pedido, Produto
+from .models import Encomenda, MovimentoEstoque, Pedido, Produto
 
 
 class PrecoBrasileiroField(forms.DecimalField):
@@ -43,6 +43,13 @@ class FormularioPedido(forms.ModelForm):
         # form_valid() com o request.user.
         fields = ["produto", "quantidade", "status", "observacoes"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["status"].required = False
+
+    def clean_status(self):
+        return self.cleaned_data.get("status") or "RECEBIDO"
+
 
 class FormularioEncomenda(forms.ModelForm):
     class Meta:
@@ -52,6 +59,19 @@ class FormularioEncomenda(forms.ModelForm):
         widgets = {
             "data_retirada": forms.DateInput(attrs={"type": "date"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["status"].required = False
+
+    def clean_status(self):
+        return self.cleaned_data.get("status") or "PENDENTE"
+
+
+class FormularioMovimentoEstoque(forms.ModelForm):
+    class Meta:
+        model = MovimentoEstoque
+        fields = ["produto", "tipo", "quantidade", "motivo"]
 
 
 class FormularioEmail(forms.Form):

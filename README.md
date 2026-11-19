@@ -25,6 +25,10 @@ Em desenvolvimento, o envio de e-mails usa o backend de console. Para testar, ca
 - Operações de cadastro, alteração e exclusão informam o resultado por mensagens Django.
 - A tela de login permite recuperação de senha por link temporário e recuperação de usuário por e-mail.
 - A interface usa jQuery Mask, DataTables e jquery-confirm.
+- Há seis modelos além do usuário: Produto, Pedido, Encomenda, MovimentoEstoque, Conversa e Mensagem.
+- Confirmar um pedido baixa o estoque na mesma transação. Cancelar ou excluir um pedido ativo devolve a quantidade. O grupo Equipe também registra entradas e saídas manuais.
+- Usuários comuns entram no grupo Clientes e fazem pedidos, encomendas e consultas ao assistente. O grupo Equipe cadastra o cardápio e o estoque.
+- O assistente fica em `/assistente/`. Sem chave de API, ele responde com os produtos cadastrados. Com `IA_API_URL`, `IA_API_KEY` e `IA_MODELO`, a chamada usa um endpoint compatível com chat completions.
 
 ## Deploy no Google App Engine
 
@@ -42,7 +46,7 @@ Credenciais não devem ser adicionadas a `app.yaml`, ao Gitingest ou ao Git; use
 
 A validação de conhecimentos no TestAI é uma atividade externa feita pelo aluno autenticado na plataforma; não existe integração de código nem credencial do TestAI neste projeto.
 
-Para a auditoria, use o Gitingest no repositório e configure Include com `*.py, *.md, *.js, *form.html, *list.html`. Acrescente `*formulario.html`, `*lista.html`, os templates de `conta` listados em `AGENTS.md`, `estilo.css`, `requirements.txt` e `app.yaml`. Não envie `.env`, `.env.*`, `venv/`, arquivos de banco ou credenciais.
+Para a auditoria, cole no Gitingest exatamente o Include e o Exclude descritos em `AGENTS.md` e em `contexto_projeto.md`. Não envie `.env`, `.env.*`, `venv/`, arquivos de banco ou credenciais.
 
 ## Testes
 

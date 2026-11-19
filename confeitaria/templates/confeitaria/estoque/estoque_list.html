@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load pagination_tags %}
+{% block titulo %}Estoque{% endblock %}
+{% block conteudo %}
+    <h1>Movimentos de estoque</h1>
+    <p><a href="{% url 'confeitaria:estoque_criar' %}" class="botao">+ Registrar movimento</a></p>
+
+    <form method="get" class="filtros">
+        {{ filter.form.as_p }}
+        <button type="submit" class="botao">Filtrar</button>
+        <a class="link-simples" href="{% url 'confeitaria:estoque_lista' %}">Limpar filtros</a>
+    </form>
+
+    <table class="tabela-padaria js-data-table">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Tipo</th>
+                <th>Quantidade</th>
+                <th>Motivo</th>
+                <th>Quando</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for movimento in movimentos %}
+            <tr>
+                <td>{{ movimento.produto.nome }}</td>
+                <td>{{ movimento.get_tipo_display }}</td>
+                <td>{{ movimento.quantidade }}</td>
+                <td>{{ movimento.motivo }}</td>
+                <td>{{ movimento.criado_em|date:"d/m/Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Nenhum movimento registrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="paginacao">
+        {% if page_obj.has_previous %}<a class="link-simples" href="?{% query_transform page=page_obj.previous_page_number %}">« Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="link-simples" href="?{% query_transform page=page_obj.next_page_number %}">Próxima »</a>{% endif %}
+    </div>
+    {% endif %}
+{% endblock %}

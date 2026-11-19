@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_filters",
     "confeitaria",
+    "ia",
 ]
 
 MIDDLEWARE = [
@@ -48,7 +49,11 @@ ROOT_URLCONF = "nucleo.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "confeitaria" / "templates"],
+        "DIRS": [
+            BASE_DIR / "base_layout",
+            BASE_DIR / "apps" / "ia" / "templates",
+            BASE_DIR / "confeitaria" / "templates",
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -56,6 +61,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "confeitaria.context_processors.grupos_do_usuario",
             ],
         },
     },
@@ -84,6 +90,15 @@ DATABASES = {
         "OPTIONS": {"sslmode": "require"},
     }
 }
+
+# Apenas para a suíte local, sem substituir o PostgreSQL de desenvolvimento ou produção.
+if config("USE_SQLITE", default=False, cast=bool):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -114,6 +129,12 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Padaria Doce & Ponto <webmaster@localhost>")
+
+# Assistente: sem chave, a resposta usa o cardápio local. A URL deve ser um endpoint
+# compatível com chat completions e a chave fica só no ambiente.
+IA_API_URL = config("IA_API_URL", default="")
+IA_API_KEY = config("IA_API_KEY", default="")
+IA_MODELO = config("IA_MODELO", default="")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

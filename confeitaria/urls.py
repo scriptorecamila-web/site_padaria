@@ -31,14 +31,14 @@ urlpatterns = [
     # ---- Autenticação: entrar, sair e alterar senha ----
     path(
         "entrar/",
-        views_autenticacao.LoginView.as_view(template_name="conta/entrar.html"),
+        views_autenticacao.LoginView.as_view(template_name="conta/entrar_form.html"),
         name="entrar",
     ),
     path("sair/", views_autenticacao.LogoutView.as_view(), name="sair"),
     path(
         "senha/alterar/",
         views_autenticacao.PasswordChangeView.as_view(
-            template_name="conta/alterar_senha.html",
+            template_name="conta/alterar_senha_form.html",
             success_url="/senha/alterada/",
         ),
         name="alterar_senha",
@@ -46,14 +46,14 @@ urlpatterns = [
     path(
         "senha/alterada/",
         views_autenticacao.PasswordChangeDoneView.as_view(
-            template_name="conta/senha_alterada.html"
+            template_name="conta/senha_alterada_detail.html"
         ),
         name="senha_alterada",
     ),
     path(
         "senha/recuperar/",
         views_autenticacao.PasswordResetView.as_view(
-            template_name="conta/recuperar_senha.html",
+            template_name="conta/recuperar_senha_form.html",
             email_template_name="conta/email_recuperar_senha.txt",
             subject_template_name="conta/assunto_recuperar_senha.txt",
             success_url=reverse_lazy("confeitaria:senha_recuperacao_enviada"),
@@ -63,14 +63,14 @@ urlpatterns = [
     path(
         "senha/recuperacao-enviada/",
         views_autenticacao.PasswordResetDoneView.as_view(
-            template_name="conta/senha_recuperacao_enviada.html"
+            template_name="conta/senha_recuperacao_enviada_detail.html"
         ),
         name="senha_recuperacao_enviada",
     ),
     path(
         "senha/redefinir/<uidb64>/<token>/",
         views_autenticacao.PasswordResetConfirmView.as_view(
-            template_name="conta/redefinir_senha.html",
+            template_name="conta/redefinir_senha_form.html",
             success_url=reverse_lazy("confeitaria:senha_redefinida"),
         ),
         name="redefinir_senha",
@@ -78,7 +78,7 @@ urlpatterns = [
     path(
         "senha/redefinida/",
         views_autenticacao.PasswordResetCompleteView.as_view(
-            template_name="conta/senha_redefinida.html"
+            template_name="conta/senha_redefinida_detail.html"
         ),
         name="senha_redefinida",
     ),
@@ -87,4 +87,7 @@ urlpatterns = [
         views.RecuperarUsuario.as_view(),
         name="recuperar_usuario",
     ),
+
+    path("estoque/", views.ListaMovimentosEstoque.as_view(), name="estoque_lista"),
+    path("estoque/novo/", views.CriarMovimentoEstoque.as_view(), name="estoque_criar"),
 ]

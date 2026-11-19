@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titulo %}Definir nova senha{% endblock %}
+{% block conteudo %}
+    <div class="cartao">
+        {% if validlink %}
+            <h1>Definir nova senha</h1>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="botao">Salvar nova senha</button>
+            </form>
+        {% else %}
+            <h1>Link inválido ou expirado</h1>
+            <p>Solicite uma nova redefinição de senha.</p>
+            <a class="botao" href="{% url 'confeitaria:recuperar_senha' %}">Solicitar novo link</a>
+        {% endif %}
+    </div>
+{% endblock %}

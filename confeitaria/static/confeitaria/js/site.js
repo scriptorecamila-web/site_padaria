@@ -42,5 +42,16 @@
                 }
             });
         });
+
+        $(".js-sugestao").on("click", function () {
+            const campo = $("#id_pergunta");
+            campo.val($(this).data("texto"));
+            campo.trigger("focus");
+        });
+
+        const chat = $("#chat-assistente");
+        if (chat.length) {
+            chat.scrollTop(chat.prop("scrollHeight"));
+        }
     });
 })(jQuery);

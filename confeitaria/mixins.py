@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import UserPassesTestMixin
 
 
 class FiltroClienteMixin:
@@ -28,6 +29,18 @@ class ListaComFiltroMixin:
         context = super().get_context_data(**kwargs)
         context["filter"] = self.filterset
         return context
+
+
+class GrupoNecessarioMixin(UserPassesTestMixin):
+    """Libera a view apenas para usuários de um dos grupos informados.
+
+    O controle é pelo grupo do Django (auth.Group), sem exceção por is_staff.
+    """
+
+    grupos_permitidos = ("Equipe",)
+
+    def test_func(self):
+        return self.request.user.groups.filter(name__in=self.grupos_permitidos).exists()
 
 
 class MensagemExclusaoMixin:

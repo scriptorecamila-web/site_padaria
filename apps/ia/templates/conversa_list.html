@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load pagination_tags %}
+{% block titulo %}Conversas{% endblock %}
+{% block conteudo %}
+    <h1>Conversas com o assistente</h1>
+    <p><a href="{% url 'ia:assistente' %}" class="botao">+ Nova conversa</a></p>
+
+    <form method="get" class="filtros">
+        {{ filter.form.as_p }}
+        <button type="submit" class="botao">Filtrar</button>
+        <a class="link-simples" href="{% url 'ia:conversa_lista' %}">Limpar filtros</a>
+    </form>
+
+    <table class="tabela-padaria js-data-table">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Iniciada em</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for conversa in conversas %}
+            <tr>
+                <td><a class="link-simples" href="{% url 'ia:assistente' %}?conversa={{ conversa.pk }}">{{ conversa.titulo }}</a></td>
+                <td>{{ conversa.criada_em|date:"d/m/Y H:i" }}</td>
+                <td><a class="link-simples" href="{% url 'ia:assistente' %}?conversa={{ conversa.pk }}">Abrir</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3">Você ainda não conversou com o assistente.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="paginacao">
+        {% if page_obj.has_previous %}<a class="link-simples" href="?{% query_transform page=page_obj.previous_page_number %}">« Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="link-simples" href="?{% query_transform page=page_obj.next_page_number %}">Próxima »</a>{% endif %}
+    </div>
+    {% endif %}
+{% endblock %}

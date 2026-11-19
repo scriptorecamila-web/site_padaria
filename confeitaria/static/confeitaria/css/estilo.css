@@ -420,3 +420,86 @@ footer.rodape::before {
 footer.rodape {
     background-color: var(--creme-forte);
 }
+
+.assistente-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 18px;
+    align-items: start;
+}
+
+.chat-assistente {
+    background-color: var(--branco);
+    border-radius: 14px;
+    padding: 16px;
+    max-height: 420px;
+    overflow-y: auto;
+    box-shadow: 0 4px 14px var(--sombra);
+}
+
+.bolha {
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 85%;
+}
+
+.bolha p {
+    margin: 4px 0 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.bolha.usuario {
+    margin-left: auto;
+    background-color: var(--rosa-suave);
+}
+
+.bolha.assistente {
+    background-color: var(--creme-forte);
+}
+
+.form-assistente {
+    margin-top: 14px;
+}
+
+.sugestoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+@media (max-width: 800px) {
+    .assistente-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.layout-assistente {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.lista-conversas {
+    padding-left: 18px;
+}
+
+.balao {
+    white-space: pre-line;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--creme-forte);
+}
+
+.balao.assistente {
+    background: var(--rosa-suave);
+}
+
+@media (max-width: 720px) {
+    .layout-assistente {
+        grid-template-columns: 1fr;
+    }
+}
